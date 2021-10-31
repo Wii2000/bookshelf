@@ -2,8 +2,8 @@ package edu.davydov.dao;
 
 import edu.davydov.BookTestData;
 import edu.davydov.model.Book;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MySQLContainer;
@@ -27,7 +27,7 @@ class BookDaoTest {
 
     @Container
     private static JdbcDatabaseContainer mysql = new MySQLContainer<>(MYSQL_LATEST_IMAGE)
-            .withInitScript("db/initAndPopulateDB.sql");
+            .withInitScript("db/initDB.sql");
 
     //create connection to container and create DAO object
     @BeforeAll
@@ -40,8 +40,8 @@ class BookDaoTest {
         dao = new BookDao(connection);
     }
 
-    //after each test reset database to the initial state
-    @AfterEach
+    //before each test reset database to the initial state
+    @BeforeEach
     public void refreshData() throws SQLException {
         Statement statement = connection.createStatement();
         statement.addBatch("DELETE FROM info;");
