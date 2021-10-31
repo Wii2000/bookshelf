@@ -1,10 +1,12 @@
 DELETE FROM info;
 DELETE FROM book;
 
+ALTER TABLE book AUTO_INCREMENT = 1;
+
 INSERT INTO book (title)
-VALUES ('Book №1'),
-       ('Book №2'),
-       ('Book №3');
+VALUES ('Book1'),
+       ('Book2'),
+       ('Book3');
 
 INSERT INTO info (book_id, description, year)
 VALUES (1, 'First book', 2001),

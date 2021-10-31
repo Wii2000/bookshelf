@@ -1,5 +1,7 @@
 package edu.davydov.model;
 
+import java.util.Objects;
+
 public class Book {
     private Integer id;
     private final String title;
@@ -39,6 +41,19 @@ public class Book {
 
     public boolean isNew() {
         return id == null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Book book = (Book) o;
+        return year == book.year && Objects.equals(id, book.id) && Objects.equals(title, book.title) && Objects.equals(description, book.description);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, description, year);
     }
 
     @Override

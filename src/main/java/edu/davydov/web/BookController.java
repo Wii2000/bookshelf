@@ -2,6 +2,7 @@ package edu.davydov.web;
 
 import edu.davydov.dao.BookDao;
 import edu.davydov.model.Book;
+import edu.davydov.util.DataSourceFactory;
 import org.slf4j.Logger;
 
 import javax.servlet.ServletException;
@@ -15,7 +16,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class BookController extends HttpServlet {
     private static final Logger log = getLogger(BookController.class);
-    private final BookDao bookDao = new BookDao();
+    private final BookDao bookDao = new BookDao(DataSourceFactory.getConnection());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
