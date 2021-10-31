@@ -15,36 +15,34 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class BookController extends HttpServlet {
     private static final Logger log = getLogger(BookController.class);
-    private BookDao bookDao = BookDao.getInstance();
+    private final BookDao bookDao = new BookDao();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
 
         switch (action == null ? "all" : action) {
-            case "delete":
+            case "delete" -> {
                 int id = getId(request);
                 bookDao.delete(id);
                 response.sendRedirect("books");
-                break;
-            case "create":
-            case "update":
+            }
+            case "create", "update" -> {
                 final Book book = "create".equals(action) ?
                         new Book("", "", 1) :
                         bookDao.get(getId(request));
                 request.setAttribute("book", book);
                 request.getRequestDispatcher("/bookForm.jsp").forward(request, response);
-                break;
-            case "all":
-            default:
+            }
+            default -> {
                 request.setAttribute("books", bookDao.findAll());
                 request.getRequestDispatcher("/books.jsp").forward(request, response);
-                break;
+            }
         }
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         request.setCharacterEncoding("UTF-8");
         String id = request.getParameter("id");
 

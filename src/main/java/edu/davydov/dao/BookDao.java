@@ -18,23 +18,11 @@ import static org.slf4j.LoggerFactory.getLogger;
  */
 public class BookDao {
     private static final Logger log = getLogger(BookDao.class);
-    private static BookDao instance;
-
-    private BookDao() {
-    }
-
-    // Lazy Initialization singleton
-    public static BookDao getInstance() {
-        if (instance == null) {
-            instance = new BookDao();
-        }
-        return instance;
-    }
 
     /**
      * Save if object is new or update if not.
      *
-     * @return true if operation was successful.
+     * @return saved object or null if can't save.
      */
     //TODO: add transactions
     public Book save(Book book) {
@@ -131,7 +119,7 @@ public class BookDao {
     }
 
     /**
-     * Get book by id or null if book with with id don't exist.
+     * Get book by id or null if book with this id don't exist.
      *
      * @param id
      */
