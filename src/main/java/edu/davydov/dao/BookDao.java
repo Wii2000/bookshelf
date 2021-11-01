@@ -10,7 +10,7 @@ import java.util.List;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
- * Class, where database query decouple from other code.
+ * Class that respons for interaction with database.
  */
 public class BookDao {
     private static final Logger log = getLogger(BookDao.class);
@@ -120,9 +120,10 @@ public class BookDao {
     }
 
     /**
-     * Get book by id or null if book with this id don't exist.
+     * Get book by id.
      *
      * @param id
+     * @return book or null if book with this id don't exist.
      */
     //TODO: add transactions
     public Book get(int id) {
@@ -155,10 +156,10 @@ public class BookDao {
     }
 
     /**
-     * Delete by id.
+     * Delete element by id.
      *
      * @param id
-     * @return true if element was deleted, false if can't find element with this id.
+     * @return true if element was deleted, false if not.
      */
     public boolean delete(int id) {
         String sql = "DELETE FROM book WHERE id=?";
