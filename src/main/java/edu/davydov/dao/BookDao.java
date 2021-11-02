@@ -25,62 +25,74 @@ public class BookDao {
      *
      * @return saved object or null if can't save.
      */
-    //TODO: add transactions
     public Book save(Book book) {
         try {
-            //check if object has id
+            // start transaction block
+            connection.setAutoCommit(false);
+            //set transaction isolation level
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             if (book.isNew()) {
                 // handle case: save in DB like new object
                 // first step: work with "book" table
-                String sql = "INSERT INTO book(title) VALUES (?)";
-                try (PreparedStatement statement = connection.
-                        prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                    statement.setString(1, book.getTitle());
-                    statement.executeUpdate();
+                final String insertBookQuery = "INSERT INTO book(title) VALUES (?)";
+                final String insertInfoQuery = "INSERT INTO info(book_id, description, year) VALUES (?, ?, ?)";
+
+                try (PreparedStatement insertBookStm = connection
+                        .prepareStatement(insertBookQuery, Statement.RETURN_GENERATED_KEYS);
+                     PreparedStatement insertInfoStm = connection.prepareStatement(insertInfoQuery)) {
+                    insertBookStm.setString(1, book.getTitle());
+                    insertBookStm.executeUpdate();
 
                     //get generated book id
-                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    try (ResultSet generatedKeys = insertBookStm.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             book.setId(generatedKeys.getInt(1));
                         } else {
-                            throw new SQLException("Creating book failed, no ID obtained.");
+                            log.error("Creating book failed, no ID obtained.");
+                            throw new SQLException();
                         }
                     }
-                }
 
-                // second step: work with "info" table
-                sql = "INSERT INTO info(book_id, description, year) VALUES (?, ?, ?)";
-                try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                    statement.setInt(1, book.getId());
-                    statement.setString(2, book.getDescription());
-                    statement.setInt(3, book.getYear());
-                    statement.executeUpdate();
+                    // second step: work with "info" table
+                    insertInfoStm.setInt(1, book.getId());
+                    insertInfoStm.setString(2, book.getDescription());
+                    insertInfoStm.setInt(3, book.getYear());
+                    insertInfoStm.executeUpdate();
                 }
             } else {
                 // handle case: update existed object in DB
                 // first step: work with "book" table
-                String sql = "UPDATE book SET title=? WHERE id=?";
-                try (PreparedStatement statement = connection.
-                        prepareStatement(sql)) {
-                    statement.setString(1, book.getTitle());
-                    statement.setInt(2, book.getId());
-                    statement.executeUpdate();
-                }
+                final String updateBookQuery = "UPDATE book SET title=? WHERE id=?";
+                final String updateInfoQuery = "UPDATE info SET description=?, year=? WHERE book_id=?";
+                try (PreparedStatement updateBookStm = connection.prepareStatement(updateBookQuery);
+                     PreparedStatement updateInfoStm = connection.prepareStatement(updateInfoQuery)) {
+                    updateBookStm.setString(1, book.getTitle());
+                    updateBookStm.setInt(2, book.getId());
+                    updateBookStm.executeUpdate();
 
-                // insert into "info" table
-                sql = "UPDATE info SET description=?, year=? WHERE book_id=?";
-                try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                    statement.setString(1, book.getDescription());
-                    statement.setString(2, String.valueOf(book.getYear()));
-                    statement.setString(3, String.valueOf(book.getId()));
+                    // insert into "info" table
+                    updateInfoStm.setString(1, book.getDescription());
+                    updateInfoStm.setString(2, String.valueOf(book.getYear()));
+                    updateInfoStm.setString(3, String.valueOf(book.getId()));
                     //check that row was updated
-                    if (statement.executeUpdate() < 1) {
+                    if (updateInfoStm.executeUpdate() < 1) {
                         return null;
                     }
                 }
             }
         } catch (SQLException ex) {
-            log.error("SQLException", ex);
+            try {
+                connection.rollback();
+                log.error("SQLException, transaction rolled back", ex);
+            } catch (SQLException exception) {
+                exception.printStackTrace();
+            }
+        } finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
         }
         return book;
     }
@@ -90,16 +102,18 @@ public class BookDao {
      *
      * @return list of all books
      */
-    //TODO: add transactions
     public List<Book> findAll() {
-        List<Book> books = new ArrayList<>();
-        String sql = """
+        final List<Book> books = new ArrayList<>();
+        final String sql = """
                 SELECT id, title, description, year
                 FROM book b
                     JOIN info i ON b.id = i.book_id
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            //set transaction isolation level
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
             ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
@@ -113,7 +127,7 @@ public class BookDao {
             }
 
         } catch (SQLException ex) {
-            log.error("SQLException", ex);
+            log.error("SQLException, error was occur while reading elements", ex);
         }
 
         return books;
@@ -125,10 +139,9 @@ public class BookDao {
      * @param id
      * @return book or null if book with this id don't exist.
      */
-    //TODO: add transactions
     public Book get(int id) {
         Book book = null;
-        String sql = """
+        final String sql = """
                 SELECT id, title, description, year
                 FROM book b
                     JOIN info i ON b.id = i.book_id
@@ -136,6 +149,9 @@ public class BookDao {
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            //set transaction isolation level
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
 
@@ -149,7 +165,7 @@ public class BookDao {
             }
 
         } catch (SQLException ex) {
-            log.error("SQLException", ex);
+            log.error("SQLException, error occur while attempt to get element by id", ex);
         }
 
         return book;
@@ -162,15 +178,18 @@ public class BookDao {
      * @return true if element was deleted, false if not.
      */
     public boolean delete(int id) {
-        String sql = "DELETE FROM book WHERE id=?";
+        final String sql = "DELETE FROM book WHERE id=?";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            //set transaction isolation level
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
             statement.setInt(1, id);
             if (statement.executeUpdate() < 1) {
                 return false;
             }
         } catch (SQLException ex) {
-            log.error("SQLException", ex);
+            log.error("SQLException, error was occur while deleting element", ex);
         }
 
         return true;
