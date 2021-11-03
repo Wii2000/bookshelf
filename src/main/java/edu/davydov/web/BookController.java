@@ -16,20 +16,32 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class BookController extends HttpServlet {
     private static final Logger log = getLogger(BookController.class);
-    private final BookDao bookDao = new BookDao(DataSourceFactory.getConnection());
+    public static final String DELETE = "delete";
+    public static final String CREATE = "create";
+    public static final String UPDATE = "update";
+    public static final String ALL = "all";
+    private final BookDao bookDao;
+
+    public BookController() {
+        bookDao = new BookDao(DataSourceFactory.getConnection());
+    }
+
+    public BookController(BookDao dao) {
+        bookDao = dao;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
 
-        switch (action == null ? "all" : action) {
-            case "delete" -> {
+        switch (action == null ? ALL : action) {
+            case DELETE -> {
                 int id = getId(request);
                 bookDao.delete(id);
                 response.sendRedirect("books");
             }
-            case "create", "update" -> {
-                final Book book = "create".equals(action) ?
+            case CREATE, UPDATE -> {
+                final Book book = CREATE.equals(action) ?
                         new Book("", "", 1) :
                         bookDao.get(getId(request));
                 request.setAttribute("book", book);
@@ -43,7 +55,7 @@ public class BookController extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         request.setCharacterEncoding("UTF-8");
         String id = request.getParameter("id");
 
